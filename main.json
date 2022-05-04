@@ -1,0 +1,740 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.6.1.6515",
+      "templateHash": "8732593381697433125"
+    }
+  },
+  "parameters": {
+    "region": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "site_name": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Site URL host name (ex. wordpress-test)"
+      }
+    },
+    "db_username": {
+      "type": "string",
+      "defaultValue": "dbadmin"
+    },
+    "db_password": {
+      "type": "secureString"
+    },
+    "wp_secret_auth_key": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'auth-key')]"
+    },
+    "wp_secret_secure_auth_key": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'secure-auth-key')]"
+    },
+    "wp_secret_logged_in_key": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'logged-in-key')]"
+    },
+    "wp_secret_nonce_key": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'nonce-key')]"
+    },
+    "wp_secret_auth_salt": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'auth-salt')]"
+    },
+    "wp_secret_secure_auth_salt": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'secure-auth-salt')]"
+    },
+    "wp_secret_logged_in_salt": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'logged-in-salt')]"
+    },
+    "wp_secret_nonce_salt": {
+      "type": "string",
+      "defaultValue": "[uniqueString(utcNow(), 'nonce-salt')]"
+    },
+    "repo_url": {
+      "type": "string",
+      "defaultValue": "https://github.com/sny0421/azure-webapp-linux-wordpress-code"
+    },
+    "branch": {
+      "type": "string",
+      "defaultValue": "main"
+    }
+  },
+  "variables": {
+    "storage_account_name": "[replace(toLower(parameters('site_name')), '-', '')]",
+    "virtual_network_name": "[format('vnet-{0}', parameters('site_name'))]",
+    "private_dns_zone_mysql_flexible_name": "[format('{0}.private.mysql.database.azure.com', variables('mysql_flexible_server_name'))]",
+    "mysql_flexible_server_name": "[format('dbsv-{0}', parameters('site_name'))]",
+    "db_name": "[format('db_{0}', replace(parameters('site_name'), '-', '_'))]",
+    "key_vault_name": "[format('kv-{0}', parameters('site_name'))]",
+    "app_service_plan_name": "[format('asp-{0}', parameters('site_name'))]",
+    "app_service_site_name": "[parameters('site_name')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2020-11-01",
+      "name": "[format('{0}/{1}', variables('virtual_network_name'), 'snet-webapp')]",
+      "properties": {
+        "addressPrefix": "10.0.140.0/28",
+        "serviceEndpoints": [
+          {
+            "service": "Microsoft.Web"
+          },
+          {
+            "service": "Microsoft.Storage"
+          },
+          {
+            "service": "Microsoft.KeyVault"
+          }
+        ],
+        "delegations": [
+          {
+            "name": "delegation",
+            "properties": {
+              "serviceName": "Microsoft.Web/serverfarms"
+            }
+          }
+        ],
+        "privateEndpointNetworkPolicies": "Enabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks/subnets",
+      "apiVersion": "2020-11-01",
+      "name": "[format('{0}/{1}', variables('virtual_network_name'), 'snet-mysql')]",
+      "properties": {
+        "addressPrefix": "10.0.140.16/28",
+        "serviceEndpoints": [],
+        "delegations": [
+          {
+            "name": "Microsoft.DBforMySQL.flexibleServers",
+            "properties": {
+              "serviceName": "Microsoft.DBforMySQL/flexibleServers"
+            }
+          }
+        ],
+        "privateEndpointNetworkPolicies": "Enabled",
+        "privateLinkServiceNetworkPolicies": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers/databases",
+      "apiVersion": "2021-05-01",
+      "name": "[format('{0}/{1}', variables('mysql_flexible_server_name'), variables('db_name'))]",
+      "properties": {
+        "charset": "utf8",
+        "collation": "utf8_general_ci"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysql_flexible_server_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}/{2}', variables('storage_account_name'), 'default', 'blog-media')]",
+      "properties": {
+        "defaultEncryptionScope": "$account-encryption-key",
+        "denyEncryptionScopeOverride": false,
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('storage_account_name'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2021-08-01",
+      "name": "[format('{0}/{1}', variables('storage_account_name'), 'default')]",
+      "properties": {
+        "changeFeed": {
+          "enabled": true
+        },
+        "restorePolicy": {
+          "enabled": true,
+          "days": 6
+        },
+        "containerDeleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        },
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        },
+        "isVersioningEnabled": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storage_account_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-sc-mysql')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[format('Server=\"{0}.mysql.database.azure.com\";UserID=\"{1}\";Password=\"{2}\";Database=\"{3}\";SslMode=MySqlSslMode.Required;', variables('mysql_flexible_server_name'), parameters('db_username'), parameters('db_password'), variables('db_name'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-db-password')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('db_password')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-auth-key')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_auth_key')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_secure_auth_key')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-logged-in-key')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_logged_in_key')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-nonce-key')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_nonce_key')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-auth-salt')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_auth_salt')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_secure_auth_salt')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-logged-in-salt')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_logged_in_salt')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
+      "properties": {
+        "attributes": {
+          "enabled": true
+        },
+        "value": "[parameters('wp_secret_nonce_salt')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('key_vault_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', variables('app_service_site_name'), 'appsettings')]",
+      "properties": {
+        "WP_SECRET_AUTH_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-auth-key')]",
+        "WP_SECRET_SECURE_AUTH_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
+        "WP_SECRET_LOGGED_IN_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-logged-in-key')]",
+        "WP_SECRET_NONCE_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-nonce-key')]",
+        "WP_SECRET_AUTH_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-auth-salt')]",
+        "WP_SECRET_SECURE_AUTH_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]",
+        "WP_SECRET_LOGGED_IN_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-logged-in-salt')]",
+        "WP_SECRET_NONCE_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
+        "SC_MYSQL": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-sc-mysql')]",
+        "DATABASE_HOST": "[format('{0}.mysql.database.azure.com', variables('mysql_flexible_server_name'))]",
+        "DATABASE_NAME": "[variables('db_name')]",
+        "DATABASE_USERNAME": "[parameters('db_username')]",
+        "DATABASE_PASSWORD": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-db-password')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-db-password')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-sc-mysql')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-auth-key')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-auth-salt')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-logged-in-key')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-logged-in-salt')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-nonce-key')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/sourcecontrols",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', variables('app_service_site_name'), 'web')]",
+      "properties": {
+        "repoUrl": "[parameters('repo_url')]",
+        "branch": "[parameters('branch')]",
+        "isManualIntegration": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/virtualNetworkConnections",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', variables('app_service_site_name'), format('{0}_{1}_snet-webapp', variables('app_service_site_name'), variables('virtual_network_name')))]",
+      "properties": {
+        "vnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]",
+        "isSwift": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/hostNameBindings",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', variables('app_service_site_name'), format('{0}.azurewebsites.net', parameters('site_name')))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-11-01",
+      "name": "[variables('virtual_network_name')]",
+      "location": "[parameters('region')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "10.0.140.0/24"
+          ]
+        },
+        "virtualNetworkPeerings": [],
+        "enableDdosProtection": false
+      }
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones",
+      "apiVersion": "2018-09-01",
+      "name": "[variables('private_dns_zone_mysql_flexible_name')]",
+      "location": "global"
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/SOA",
+      "apiVersion": "2018-09-01",
+      "name": "[format('{0}/{1}', variables('private_dns_zone_mysql_flexible_name'), '@')]",
+      "properties": {
+        "ttl": 3600,
+        "soaRecord": {
+          "email": "azureprivatedns-host.microsoft.com",
+          "expireTime": 2419200,
+          "host": "azureprivatedns.net",
+          "minimumTtl": 10,
+          "refreshTime": 3600,
+          "retryTime": 300,
+          "serialNumber": 1
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('private_dns_zone_mysql_flexible_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+      "apiVersion": "2018-09-01",
+      "name": "[format('{0}/{1}', variables('private_dns_zone_mysql_flexible_name'), format('private_dns_zone_mysql_flexible_{0}_associate', replace(parameters('site_name'), '-', '_')))]",
+      "location": "global",
+      "properties": {
+        "registrationEnabled": true,
+        "virtualNetwork": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('private_dns_zone_mysql_flexible_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DBforMySQL/flexibleServers",
+      "apiVersion": "2021-05-01",
+      "name": "[variables('mysql_flexible_server_name')]",
+      "location": "[parameters('region')]",
+      "sku": {
+        "name": "Standard_B1s",
+        "tier": "Burstable"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('db_username')]",
+        "administratorLoginPassword": "[parameters('db_password')]",
+        "createMode": "Default",
+        "storage": {
+          "storageSizeGB": 20,
+          "iops": 360,
+          "autoGrow": "Disabled"
+        },
+        "version": "8.0.21",
+        "availabilityZone": "1",
+        "replicationRole": "None",
+        "network": {
+          "delegatedSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-mysql')]",
+          "privateDnsZoneResourceId": "[resourceId('Microsoft.Network/privateDnsZones', variables('private_dns_zone_mysql_flexible_name'))]"
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/privateDnsZones', variables('private_dns_zone_mysql_flexible_name'))]",
+        "[resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', variables('private_dns_zone_mysql_flexible_name'), format('private_dns_zone_mysql_flexible_{0}_associate', replace(parameters('site_name'), '-', '_')))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-mysql')]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-08-01",
+      "name": "[variables('storage_account_name')]",
+      "location": "[parameters('region')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "defaultToOAuthAuthentication": false,
+        "publicNetworkAccess": "Enabled",
+        "allowCrossTenantReplication": true,
+        "minimumTlsVersion": "TLS1_2",
+        "allowBlobPublicAccess": true,
+        "allowSharedKeyAccess": true,
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "requireInfrastructureEncryption": true,
+          "services": {
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2021-11-01-preview",
+      "name": "[variables('key_vault_name')]",
+      "location": "[parameters('region')]",
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[subscription().tenantId]",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "defaultAction": "Deny",
+          "ipRules": [],
+          "virtualNetworkRules": [
+            {
+              "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]",
+              "ignoreMissingVnetServiceEndpoint": false
+            }
+          ]
+        },
+        "accessPolicies": [
+          {
+            "tenantId": "[subscription().tenantId]",
+            "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('app_service_site_name')), '2021-03-01', 'full').identity.principalId]",
+            "permissions": {
+              "secrets": [
+                "get"
+              ]
+            }
+          }
+        ],
+        "enabledForDeployment": false,
+        "enabledForDiskEncryption": false,
+        "enabledForTemplateDeployment": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 90,
+        "enableRbacAuthorization": false,
+        "publicNetworkAccess": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "name": "[variables('app_service_plan_name')]",
+      "location": "[parameters('region')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic",
+        "size": "B1",
+        "family": "B",
+        "capacity": 1
+      },
+      "kind": "linux",
+      "properties": {
+        "perSiteScaling": false,
+        "elasticScaleEnabled": false,
+        "maximumElasticWorkerCount": 1,
+        "isSpot": false,
+        "reserved": true,
+        "isXenon": false,
+        "hyperV": false,
+        "targetWorkerCount": 0,
+        "targetWorkerSizeId": 0,
+        "zoneRedundant": false
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2021-03-01",
+      "name": "[variables('app_service_site_name')]",
+      "location": "[parameters('region')]",
+      "kind": "app,linux",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[format('{0}.azurewebsites.net', parameters('site_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[format('{0}.scm.azurewebsites.net', parameters('site_name'))]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('app_service_plan_name'))]",
+        "reserved": true,
+        "isXenon": false,
+        "hyperV": false,
+        "siteConfig": {
+          "numberOfWorkers": 1,
+          "linuxFxVersion": "PHP|8.0",
+          "acrUseManagedIdentityCreds": false,
+          "alwaysOn": false,
+          "http20Enabled": true,
+          "functionAppScaleLimit": 0,
+          "minimumElasticInstanceCount": 0
+        },
+        "scmSiteAlsoStopped": false,
+        "clientAffinityEnabled": false,
+        "clientCertEnabled": false,
+        "clientCertMode": "Required",
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "redundancyMode": "None",
+        "storageAccountRequired": false,
+        "virtualNetworkSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]",
+        "keyVaultReferenceIdentity": "SystemAssigned"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('app_service_plan_name'))]",
+        "[resourceId('Microsoft.DBforMySQL/flexibleServers', variables('mysql_flexible_server_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2021-03-01",
+      "name": "[format('{0}/{1}', variables('app_service_site_name'), 'web')]",
+      "properties": {
+        "numberOfWorkers": 1,
+        "defaultDocuments": [
+          "Default.htm",
+          "Default.html",
+          "Default.asp",
+          "index.htm",
+          "index.html",
+          "iisstart.htm",
+          "default.aspx",
+          "index.php",
+          "hostingstart.html"
+        ],
+        "netFrameworkVersion": "v4.0",
+        "linuxFxVersion": "PHP|8.0",
+        "requestTracingEnabled": false,
+        "remoteDebuggingEnabled": false,
+        "remoteDebuggingVersion": "VS2019",
+        "httpLoggingEnabled": false,
+        "acrUseManagedIdentityCreds": false,
+        "logsDirectorySizeLimit": 35,
+        "detailedErrorLoggingEnabled": false,
+        "publishingUsername": "$wordpress-draft",
+        "scmType": "None",
+        "use32BitWorkerProcess": true,
+        "webSocketsEnabled": false,
+        "alwaysOn": false,
+        "managedPipelineMode": "Integrated",
+        "virtualApplications": [
+          {
+            "virtualPath": "/",
+            "physicalPath": "site\\wwwroot",
+            "preloadEnabled": false
+          }
+        ],
+        "loadBalancing": "LeastRequests",
+        "experiments": {
+          "rampUpRules": []
+        },
+        "autoHealEnabled": false,
+        "vnetName": "[variables('virtual_network_name')]",
+        "vnetRouteAllEnabled": true,
+        "vnetPrivatePortsCount": 0,
+        "localMySqlEnabled": false,
+        "ipSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 1,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictions": [
+          {
+            "ipAddress": "Any",
+            "action": "Allow",
+            "priority": 1,
+            "name": "Allow all",
+            "description": "Allow all access"
+          }
+        ],
+        "scmIpSecurityRestrictionsUseMain": false,
+        "http20Enabled": true,
+        "minTlsVersion": "1.2",
+        "scmMinTlsVersion": "1.0",
+        "ftpsState": "Disabled",
+        "preWarmedInstanceCount": 0,
+        "functionAppScaleLimit": 0,
+        "functionsRuntimeScaleMonitoringEnabled": false,
+        "minimumElasticInstanceCount": 0,
+        "azureStorageAccounts": {}
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
+      ]
+    }
+  ]
+}
