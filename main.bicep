@@ -56,9 +56,6 @@ resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
           service: 'Microsoft.Web'
         }
         {
-          service: 'Microsoft.Storage'
-        }
-        {
           service: 'Microsoft.KeyVault'
         }
       ]
