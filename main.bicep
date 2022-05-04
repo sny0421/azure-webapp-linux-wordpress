@@ -449,6 +449,14 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
       http20Enabled: true
       functionAppScaleLimit: 0
       minimumElasticInstanceCount: 0
+      virtualApplications: [
+        {
+          virtualPath: '/'
+          physicalPath: 'site\\wwwroot'
+          preloadEnabled: false
+        }
+      ]
+      vnetRouteAllEnabled: true
     }
     scmSiteAlsoStopped: false
     clientAffinityEnabled: false
@@ -464,7 +472,7 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
     keyVaultReferenceIdentity: 'SystemAssigned'
   }
 
-  resource site_appsettings 'config' = {
+  resource site_config_appsettings 'config' = {
     name: 'appsettings'
     properties: {
       WP_SECRET_AUTH_KEY: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_auth_key.name})'
@@ -507,82 +515,4 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
   dependsOn: [
     mysql_flexible_server
   ]
-}
-
-resource app_service_site_config 'Microsoft.Web/sites/config@2021-03-01' = {
-  parent: app_service_site
-  name: 'web'
-  properties: {
-    numberOfWorkers: 1
-    defaultDocuments: [
-      'Default.htm'
-      'Default.html'
-      'Default.asp'
-      'index.htm'
-      'index.html'
-      'iisstart.htm'
-      'default.aspx'
-      'index.php'
-      'hostingstart.html'
-    ]
-    netFrameworkVersion: 'v4.0'
-    linuxFxVersion: 'PHP|8.0'
-    requestTracingEnabled: false
-    remoteDebuggingEnabled: false
-    remoteDebuggingVersion: 'VS2019'
-    httpLoggingEnabled: false
-    acrUseManagedIdentityCreds: false
-    logsDirectorySizeLimit: 35
-    detailedErrorLoggingEnabled: false
-    publishingUsername: '$wordpress-draft'
-    scmType: 'None'
-    use32BitWorkerProcess: true
-    webSocketsEnabled: false
-    alwaysOn: false
-    managedPipelineMode: 'Integrated'
-    virtualApplications: [
-      {
-        virtualPath: '/'
-        physicalPath: 'site\\wwwroot'
-        preloadEnabled: false
-      }
-    ]
-    loadBalancing: 'LeastRequests'
-    experiments: {
-      rampUpRules: []
-    }
-    autoHealEnabled: false
-    vnetName: virtual_network.name
-    vnetRouteAllEnabled: true
-    vnetPrivatePortsCount: 0
-    localMySqlEnabled: false
-    ipSecurityRestrictions: [
-      {
-        ipAddress: 'Any'
-        action: 'Allow'
-        priority: 1
-        name: 'Allow all'
-        description: 'Allow all access'
-      }
-    ]
-    scmIpSecurityRestrictions: [
-      {
-        ipAddress: 'Any'
-        action: 'Allow'
-        priority: 1
-        name: 'Allow all'
-        description: 'Allow all access'
-      }
-    ]
-    scmIpSecurityRestrictionsUseMain: false
-    http20Enabled: true
-    minTlsVersion: '1.2'
-    scmMinTlsVersion: '1.0'
-    ftpsState: 'Disabled'
-    preWarmedInstanceCount: 0
-    functionAppScaleLimit: 0
-    functionsRuntimeScaleMonitoringEnabled: false
-    minimumElasticInstanceCount: 0
-    azureStorageAccounts: {}
-  }
 }
