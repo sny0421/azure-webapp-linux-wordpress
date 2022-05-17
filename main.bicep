@@ -1,24 +1,35 @@
 // パラメータ＝
+@description('Location for all resources.')
 param region string = resourceGroup().location
 
-@description('Site URL host name (ex. wordpress-test)')
+@description('Site URL host name (ex. wordpress-test).')
 param site_name string = ''
 
+@description('User name of MySQL database server.')
 param db_username string = 'dbadmin'
 
+@description('Password of MySQL database server.')
 @secure()
 param db_password string
 
-param wp_secret_auth_key string = uniqueString(utcNow(), 'auth-key')
-param wp_secret_secure_auth_key string = uniqueString(utcNow(), 'secure-auth-key')
-param wp_secret_logged_in_key string = uniqueString(utcNow(), 'logged-in-key')
-param wp_secret_nonce_key string = uniqueString(utcNow(), 'nonce-key')
-param wp_secret_auth_salt string = uniqueString(utcNow(), 'auth-salt')
-param wp_secret_secure_auth_salt string = uniqueString(utcNow(), 'secure-auth-salt')
-param wp_secret_logged_in_salt string = uniqueString(utcNow(), 'logged-in-salt')
-param wp_secret_nonce_salt string = uniqueString(utcNow(), 'nonce-salt')
+@description('SKU of App Service Plan.')
+@allowed([
+  'B1'
+  'B2'
+  'B3'
+  'S1'
+  'S2'
+  'S3'
+  'P1V2'
+])
+param selected_sku string = 'B1'
 
+@description('Unique string seed for WordPress auth keys and salts.')
+param unique_seed_string string = utcNow()
+
+@description('Source WordPress repogitry.')
 param repo_url string = 'https://github.com/sny0421/azure-webapp-linux-wordpress-code'
+@description('Source brunch.')
 param branch string = 'main'
 
 
@@ -31,6 +42,60 @@ var db_name = 'db_${replace(site_name, '-', '_')}'
 var key_vault_name = 'kv-${site_name}'
 var app_service_plan_name = 'asp-${site_name}'
 var app_service_site_name = site_name
+
+var asp_sku = {
+  'B1': {
+    name: 'B1'
+    tier: 'Basic'
+    size: 'B1'
+    family: 'B'
+    capacity: 1
+  }
+  'B2': {
+    name: 'B2'
+    tier: 'Basic'
+    size: 'B2'
+    family: 'B'
+    capacity: 2
+  }
+  'B3': {
+    name: 'B3'
+    tier: 'Basic'
+    size: 'B3'
+    family: 'B'
+    capacity: 3
+  }
+  'S1': {
+    name: 'S1'
+    tier: 'Standard'
+    size: 'S1'
+    family: 'S'
+    capacity: 1
+  }
+  'S2': {
+    name: 'S2'
+    tier: 'Standard'
+    size: 'S2'
+    family: 'S'
+    capacity: 2
+  }
+  'S3': {
+    name: 'S3'
+    tier: 'Standard'
+    size: 'S3'
+    family: 'S'
+    capacity: 3
+  }
+}
+
+var wp_secret_auth_key = uniqueString(unique_seed_string, 'auth-key')
+var wp_secret_secure_auth_key = uniqueString(unique_seed_string, 'secure-auth-key')
+var wp_secret_logged_in_key = uniqueString(unique_seed_string, 'logged-in-key')
+var wp_secret_nonce_key = uniqueString(unique_seed_string, 'nonce-key')
+var wp_secret_auth_salt = uniqueString(unique_seed_string, 'auth-salt')
+var wp_secret_secure_auth_salt = uniqueString(unique_seed_string, 'secure-auth-salt')
+var wp_secret_logged_in_salt = uniqueString(unique_seed_string, 'logged-in-salt')
+var wp_secret_nonce_salt = uniqueString(unique_seed_string, 'nonce-salt')
 
 // リソース
 /// Virtual Network
@@ -391,11 +456,11 @@ resource app_service_plan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: app_service_plan_name
   location: region
   sku: {
-    name: 'B1'
-    tier: 'Basic'
-    size: 'B1'
-    family: 'B'
-    capacity: 1
+    name: asp_sku[selected_sku].name
+    tier: asp_sku[selected_sku].tier
+    size: asp_sku[selected_sku].size
+    family: asp_sku[selected_sku].family
+    capacity: asp_sku[selected_sku].capacity
   }
   kind: 'linux'
   properties: {
@@ -481,6 +546,7 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
       WP_SECRET_LOGGED_IN_SALT: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_logged_in_salt.name})'
       WP_SECRET_NONCE_SALT: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_nonce_salt.name})'
       SC_MYSQL: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_sc_mysql.name})'
+      WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true'
       DATABASE_HOST: '${mysql_flexible_server_name}.mysql.database.azure.com'
       DATABASE_NAME: db_name
       DATABASE_USERNAME: db_username
