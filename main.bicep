@@ -27,7 +27,7 @@ param selected_sku string = 'B1'
 @description('Unique string seed for WordPress auth keys and salts.')
 param unique_seed_string string = utcNow()
 
-@description('Source WordPress repogitry.')
+@description('Source WordPress repositry.')
 param repo_url string = 'https://github.com/sny0421/azure-webapp-linux-wordpress-code'
 @description('Source brunch.')
 param branch string = 'main'
@@ -136,7 +136,6 @@ resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
       privateLinkServiceNetworkPolicies: 'Enabled'
     }
   }
-  
   resource subnet_mysql 'subnets' = {
     name: 'snet-mysql'
     properties: {
@@ -153,6 +152,9 @@ resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
       privateEndpointNetworkPolicies: 'Enabled'
       privateLinkServiceNetworkPolicies: 'Enabled'
     }
+    dependsOn: [
+      subnet_webapp
+    ]
   }
 }
 

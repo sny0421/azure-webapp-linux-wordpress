@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.6.1.6515",
-      "templateHash": "7150246523214696260"
+      "templateHash": "2097440154591783545"
     }
   },
   "parameters": {
@@ -63,7 +63,7 @@
       "type": "string",
       "defaultValue": "https://github.com/sny0421/azure-webapp-linux-wordpress-code",
       "metadata": {
-        "description": "Source WordPress repogitry."
+        "description": "Source WordPress repositry."
       }
     },
     "branch": {
@@ -185,6 +185,7 @@
         "privateLinkServiceNetworkPolicies": "Enabled"
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]",
         "[resourceId('Microsoft.Network/virtualNetworks', variables('virtual_network_name'))]"
       ]
     },
