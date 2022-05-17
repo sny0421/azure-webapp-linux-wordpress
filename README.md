@@ -26,7 +26,7 @@ Create resource group for deploy some resources (App Service, Virtual Network, a
 az group create -n rg-wptest220517 -l japaneast
 ```
 
-###　2. Deploy to Azure
+### 2. Deploy to Azure
 Deploy to Azure with some parameters.
 
 ```
