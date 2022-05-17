@@ -1,13 +1,3 @@
-# azure-webapp-linux-wordpress
-
-## 概要
-Azure App Service で WordPress を実行するための環境を構築するテンプレートです。
-
-今後 Windows で PHP 8 がサポートされなくなるため、Linux で WordPress を実行した上で必要なデータベースなども準備しています。
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsny0421%2Fazure-webapp-linux-wordpress%2Fmain%2Fmain.json)
-
-
 # WordPress with Azure App Service (Linux / PHP8)
 This is the template for deploy WordPress based PHP 8 with Linux on Azure App Service.
 WordPress files are some custom for this environment.
@@ -21,10 +11,11 @@ Source repositry is [HERE](https://github.com/sny0421/azure-webapp-linux-wordpre
 - Key Vault
 - Storage Account
 
-![Architecture](https://github.com/sny0421/azure-webapp-linux-wordpress-architecture.png)
+![Architecture](https://github.com/sny0421/azure-webapp-linux-wordpress/blob/main/azure-webapp-linux-wordpress-architecture.png?raw=true)
 
 ## Setup
 Deploy to Azure !!
+
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fsny0421%2Fazure-webapp-linux-wordpress%2Fmain%2Fmain.json)
 
 Or, if use Azure CLI.
