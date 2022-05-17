@@ -121,6 +121,9 @@ resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
           service: 'Microsoft.Web'
         }
         {
+          service: 'Microsoft.Storage'
+        }
+        {
           service: 'Microsoft.KeyVault'
         }
       ]
@@ -539,6 +542,11 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
   resource site_config_appsettings 'config' = {
     name: 'appsettings'
     properties: {
+      DATABASE_HOST: '${mysql_flexible_server_name}.mysql.database.azure.com'
+      DATABASE_NAME: db_name
+      DATABASE_USERNAME: db_username
+      DATABASE_PASSWORD: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_db_password.name})'
+      SC_MYSQL: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_sc_mysql.name})'
       WP_SECRET_AUTH_KEY: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_auth_key.name})'
       WP_SECRET_SECURE_AUTH_KEY: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_secure_auth_key.name})'
       WP_SECRET_LOGGED_IN_KEY: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_logged_in_key.name})'
@@ -547,13 +555,11 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
       WP_SECRET_SECURE_AUTH_SALT: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_secure_auth_salt.name})'
       WP_SECRET_LOGGED_IN_SALT: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_logged_in_salt.name})'
       WP_SECRET_NONCE_SALT: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_wp_secret_nonce_salt.name})'
-      SC_MYSQL: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_sc_mysql.name})'
       WEBSITES_ENABLE_APP_SERVICE_STORAGE: 'true'
-      DATABASE_HOST: '${mysql_flexible_server_name}.mysql.database.azure.com'
-      DATABASE_NAME: db_name
-      DATABASE_USERNAME: db_username
-      DATABASE_PASSWORD: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${key_vault::key_vault_secret_db_password.name})'
     }
+    dependsOn: [
+      site_sourcecontrols
+    ]
   }
 
   resource site_sourcecontrols 'sourcecontrols' = {

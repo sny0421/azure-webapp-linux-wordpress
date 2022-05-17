@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.6.1.6515",
-      "templateHash": "2097440154591783545"
+      "version": "0.6.18.56646",
+      "templateHash": "7561628337601205012"
     }
   },
   "parameters": {
@@ -146,6 +146,9 @@
         "serviceEndpoints": [
           {
             "service": "Microsoft.Web"
+          },
+          {
+            "service": "Microsoft.Storage"
           },
           {
             "service": "Microsoft.KeyVault"
@@ -388,6 +391,11 @@
       "apiVersion": "2021-03-01",
       "name": "[format('{0}/{1}', variables('app_service_site_name'), 'appsettings')]",
       "properties": {
+        "DATABASE_HOST": "[format('{0}.mysql.database.azure.com', variables('mysql_flexible_server_name'))]",
+        "DATABASE_NAME": "[variables('db_name')]",
+        "DATABASE_USERNAME": "[parameters('db_username')]",
+        "DATABASE_PASSWORD": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-db-password')]",
+        "SC_MYSQL": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-sc-mysql')]",
         "WP_SECRET_AUTH_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-auth-key')]",
         "WP_SECRET_SECURE_AUTH_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
         "WP_SECRET_LOGGED_IN_KEY": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-logged-in-key')]",
@@ -396,12 +404,7 @@
         "WP_SECRET_SECURE_AUTH_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]",
         "WP_SECRET_LOGGED_IN_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-logged-in-salt')]",
         "WP_SECRET_NONCE_SALT": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
-        "SC_MYSQL": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-sc-mysql')]",
-        "WEBSITES_ENABLE_APP_SERVICE_STORAGE": "true",
-        "DATABASE_HOST": "[format('{0}.mysql.database.azure.com', variables('mysql_flexible_server_name'))]",
-        "DATABASE_NAME": "[variables('db_name')]",
-        "DATABASE_USERNAME": "[parameters('db_username')]",
-        "DATABASE_PASSWORD": "[format('@Microsoft.KeyVault(VaultName={0};SecretName={1})', variables('key_vault_name'), 'secret-db-password')]"
+        "WEBSITES_ENABLE_APP_SERVICE_STORAGE": "true"
       },
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]",
@@ -414,7 +417,8 @@
         "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-nonce-key')]",
         "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
         "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
-        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]"
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]",
+        "[resourceId('Microsoft.Web/sites/sourcecontrols', variables('app_service_site_name'), 'web')]"
       ]
     },
     {
