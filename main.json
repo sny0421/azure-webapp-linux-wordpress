@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.9.1.41621",
-      "templateHash": "14119370437280235414"
+      "templateHash": "4138793161439106155"
     }
   },
   "parameters": {
@@ -531,7 +531,6 @@
           "autoGrow": "Disabled"
         },
         "version": "8.0.21",
-        "availabilityZone": "1",
         "replicationRole": "None",
         "network": {
           "delegatedSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-mysql')]",
