@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.9.1.41621",
-      "templateHash": "4138793161439106155"
+      "templateHash": "17347676734087682259"
     }
   },
   "parameters": {
@@ -139,7 +139,7 @@
   "resources": [
     {
       "type": "Microsoft.Network/virtualNetworks/subnets",
-      "apiVersion": "2020-11-01",
+      "apiVersion": "2022-01-01",
       "name": "[format('{0}/{1}', variables('virtual_network_name'), 'snet-webapp')]",
       "properties": {
         "addressPrefix": "10.0.140.0/28",
@@ -171,7 +171,7 @@
     },
     {
       "type": "Microsoft.Network/virtualNetworks/subnets",
-      "apiVersion": "2020-11-01",
+      "apiVersion": "2022-01-01",
       "name": "[format('{0}/{1}', variables('virtual_network_name'), 'snet-mysql')]",
       "properties": {
         "addressPrefix": "10.0.140.16/28",
@@ -238,7 +238,7 @@
         },
         "deleteRetentionPolicy": {
           "enabled": true,
-          "days": 35
+          "days": 7
         },
         "isVersioningEnabled": true
       },
@@ -248,7 +248,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-sc-mysql')]",
       "properties": {
         "attributes": {
@@ -262,7 +262,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-db-password')]",
       "properties": {
         "attributes": {
@@ -276,7 +276,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-auth-key')]",
       "properties": {
         "attributes": {
@@ -290,7 +290,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-secure-auth-key')]",
       "properties": {
         "attributes": {
@@ -304,7 +304,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-logged-in-key')]",
       "properties": {
         "attributes": {
@@ -318,7 +318,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-nonce-key')]",
       "properties": {
         "attributes": {
@@ -332,7 +332,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-auth-salt')]",
       "properties": {
         "attributes": {
@@ -346,7 +346,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-secure-auth-salt')]",
       "properties": {
         "attributes": {
@@ -360,7 +360,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-logged-in-salt')]",
       "properties": {
         "attributes": {
@@ -374,7 +374,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults/secrets",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[format('{0}/{1}', variables('key_vault_name'), 'secret-wp-secret-nonce-salt')]",
       "properties": {
         "attributes": {
@@ -388,7 +388,7 @@
     },
     {
       "type": "Microsoft.Web/sites/config",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[format('{0}/{1}', variables('app_service_site_name'), 'appsettings')]",
       "properties": {
         "DATABASE_HOST": "[format('{0}.mysql.database.azure.com', variables('mysql_flexible_server_name'))]",
@@ -423,7 +423,7 @@
     },
     {
       "type": "Microsoft.Web/sites/sourcecontrols",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[format('{0}/{1}', variables('app_service_site_name'), 'web')]",
       "properties": {
         "repoUrl": "[parameters('repo_url')]",
@@ -436,7 +436,7 @@
     },
     {
       "type": "Microsoft.Web/sites/virtualNetworkConnections",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[format('{0}/{1}', variables('app_service_site_name'), format('{0}_{1}_snet-webapp', variables('app_service_site_name'), variables('virtual_network_name')))]",
       "properties": {
         "vnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-webapp')]",
@@ -449,7 +449,7 @@
     },
     {
       "type": "Microsoft.Web/sites/hostNameBindings",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[format('{0}/{1}', variables('app_service_site_name'), format('{0}.azurewebsites.net', parameters('site_name')))]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/sites', variables('app_service_site_name'))]"
@@ -457,7 +457,7 @@
     },
     {
       "type": "Microsoft.Network/virtualNetworks",
-      "apiVersion": "2020-11-01",
+      "apiVersion": "2022-01-01",
       "name": "[variables('virtual_network_name')]",
       "location": "[parameters('region')]",
       "properties": {
@@ -472,13 +472,13 @@
     },
     {
       "type": "Microsoft.Network/privateDnsZones",
-      "apiVersion": "2018-09-01",
+      "apiVersion": "2020-06-01",
       "name": "[variables('private_dns_zone_mysql_flexible_name')]",
       "location": "global"
     },
     {
       "type": "Microsoft.Network/privateDnsZones/SOA",
-      "apiVersion": "2018-09-01",
+      "apiVersion": "2020-06-01",
       "name": "[format('{0}/{1}', variables('private_dns_zone_mysql_flexible_name'), '@')]",
       "properties": {
         "ttl": 3600,
@@ -498,7 +498,7 @@
     },
     {
       "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
-      "apiVersion": "2018-09-01",
+      "apiVersion": "2020-06-01",
       "name": "[format('{0}/{1}', variables('private_dns_zone_mysql_flexible_name'), format('private_dns_zone_mysql_flexible_{0}_associate', replace(parameters('site_name'), '-', '_')))]",
       "location": "global",
       "properties": {
@@ -531,13 +531,14 @@
           "autoGrow": "Disabled"
         },
         "version": "8.0.21",
+        "availabilityZone": "1",
         "replicationRole": "None",
         "network": {
           "delegatedSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtual_network_name'), 'snet-mysql')]",
           "privateDnsZoneResourceId": "[resourceId('Microsoft.Network/privateDnsZones', variables('private_dns_zone_mysql_flexible_name'))]"
         },
         "backup": {
-          "backupRetentionDays": 7,
+          "backupRetentionDays": 35,
           "geoRedundantBackup": "Disabled"
         },
         "highAvailability": {
@@ -553,7 +554,7 @@
     },
     {
       "type": "Microsoft.Storage/storageAccounts",
-      "apiVersion": "2021-08-01",
+      "apiVersion": "2021-09-01",
       "name": "[variables('storage_account_name')]",
       "location": "[parameters('region')]",
       "sku": {
@@ -589,7 +590,7 @@
     },
     {
       "type": "Microsoft.KeyVault/vaults",
-      "apiVersion": "2021-11-01-preview",
+      "apiVersion": "2022-07-01",
       "name": "[variables('key_vault_name')]",
       "location": "[parameters('region')]",
       "properties": {
@@ -612,7 +613,7 @@
         "accessPolicies": [
           {
             "tenantId": "[subscription().tenantId]",
-            "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('app_service_site_name')), '2021-03-01', 'full').identity.principalId]",
+            "objectId": "[reference(resourceId('Microsoft.Web/sites', variables('app_service_site_name')), '2022-03-01', 'full').identity.principalId]",
             "permissions": {
               "secrets": [
                 "get"
@@ -635,7 +636,7 @@
     },
     {
       "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[variables('app_service_plan_name')]",
       "location": "[parameters('region')]",
       "sku": {
@@ -661,7 +662,7 @@
     },
     {
       "type": "Microsoft.Web/sites",
-      "apiVersion": "2021-03-01",
+      "apiVersion": "2022-03-01",
       "name": "[variables('app_service_site_name')]",
       "location": "[parameters('region')]",
       "kind": "app,linux",

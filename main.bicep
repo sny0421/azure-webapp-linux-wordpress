@@ -98,7 +98,7 @@ var wp_secret_nonce_salt = uniqueString(unique_seed_string, 'nonce-salt')
 
 // Resources
 /// Virtual Network
-resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
+resource virtual_network 'Microsoft.Network/virtualNetworks@2022-01-01' = {
   name: virtual_network_name
   location: region
   properties: {
@@ -161,12 +161,12 @@ resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
 }
 
 // Private DNS Zone
-resource private_dns_zone_mysql_flexible 'Microsoft.Network/privateDnsZones@2018-09-01' = {
+resource private_dns_zone_mysql_flexible 'Microsoft.Network/privateDnsZones@2020-06-01' = {
   name: private_dns_zone_mysql_flexible_name
   location: 'global'
 }
 
-resource private_dns_zone_mysql_flexible_soa 'Microsoft.Network/privateDnsZones/SOA@2018-09-01' = {
+resource private_dns_zone_mysql_flexible_soa 'Microsoft.Network/privateDnsZones/SOA@2020-06-01' = {
   parent: private_dns_zone_mysql_flexible
   name: '@'
   properties: {
@@ -183,7 +183,7 @@ resource private_dns_zone_mysql_flexible_soa 'Microsoft.Network/privateDnsZones/
   }
 }
 
-resource private_dns_zone_mysql_flexible_associate 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2018-09-01' = {
+resource private_dns_zone_mysql_flexible_associate 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
   parent: private_dns_zone_mysql_flexible
   name: 'private_dns_zone_mysql_flexible_${replace(site_name, '-', '_')}_associate'
   location: 'global'
@@ -213,13 +213,14 @@ resource mysql_flexible_server 'Microsoft.DBforMySQL/flexibleServers@2021-05-01'
       autoGrow: 'Disabled'
     }
     version: '8.0.21'
+    availabilityZone: '1'
     replicationRole: 'None'
     network: {
       delegatedSubnetResourceId: virtual_network::subnet_mysql.id
       privateDnsZoneResourceId: private_dns_zone_mysql_flexible.id
     }
     backup: {
-      backupRetentionDays: 7
+      backupRetentionDays: 35
       geoRedundantBackup: 'Disabled'
     }
     highAvailability: {
@@ -240,7 +241,7 @@ resource mysql_flexible_server 'Microsoft.DBforMySQL/flexibleServers@2021-05-01'
 }
 
 /// Storage Accounts
-resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
+resource storage_account 'Microsoft.Storage/storageAccounts@2021-09-01' = {
   name: storage_account_name
   location: region
   sku: {
@@ -293,7 +294,7 @@ resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
       }
       deleteRetentionPolicy: {
         enabled: true
-        days: 35
+        days: 7
       }
       isVersioningEnabled: true
     }
@@ -310,7 +311,7 @@ resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
 }
 
 /// Key Vaylt
-resource key_vault 'Microsoft.KeyVault/vaults@2021-11-01-preview' = {
+resource key_vault 'Microsoft.KeyVault/vaults@2022-07-01' = {
   name: key_vault_name
   location: region
   properties: {
@@ -452,7 +453,7 @@ resource key_vault 'Microsoft.KeyVault/vaults@2021-11-01-preview' = {
 }
 
 /// App Service Plan
-resource app_service_plan 'Microsoft.Web/serverfarms@2021-03-01' = {
+resource app_service_plan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: app_service_plan_name
   location: region
   sku: {
@@ -478,7 +479,7 @@ resource app_service_plan 'Microsoft.Web/serverfarms@2021-03-01' = {
 }
 
 /// App Service
-resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
+resource app_service_site 'Microsoft.Web/sites@2022-03-01' = {
   name: app_service_site_name
   location: region
   kind: 'app,linux'
