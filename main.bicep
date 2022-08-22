@@ -213,7 +213,7 @@ resource mysql_flexible_server 'Microsoft.DBforMySQL/flexibleServers@2021-05-01'
       autoGrow: 'Disabled'
     }
     version: '8.0.21'
-    availabilityZone: '1'
+    availabilityZone: ''
     replicationRole: 'None'
     network: {
       delegatedSubnetResourceId: virtual_network::subnet_mysql.id
