@@ -1,4 +1,4 @@
-// パラメータ＝
+// Parameters
 @description('Location for all resources.')
 param region string = resourceGroup().location
 
@@ -32,8 +32,7 @@ param repo_url string = 'https://github.com/sny0421/azure-webapp-linux-wordpress
 @description('Source brunch.')
 param branch string = 'main'
 
-
-// 変数
+// Variables
 var storage_account_name = replace(toLower(site_name), '-', '')
 var virtual_network_name = 'vnet-${site_name}'
 var private_dns_zone_mysql_flexible_name = '${mysql_flexible_server_name}.private.mysql.database.azure.com'
@@ -44,42 +43,42 @@ var app_service_plan_name = 'asp-${site_name}'
 var app_service_site_name = site_name
 
 var asp_sku = {
-  'B1': {
+  B1: {
     name: 'B1'
     tier: 'Basic'
     size: 'B1'
     family: 'B'
     capacity: 1
   }
-  'B2': {
+  B2: {
     name: 'B2'
     tier: 'Basic'
     size: 'B2'
     family: 'B'
     capacity: 2
   }
-  'B3': {
+  B3: {
     name: 'B3'
     tier: 'Basic'
     size: 'B3'
     family: 'B'
     capacity: 3
   }
-  'S1': {
+  S1: {
     name: 'S1'
     tier: 'Standard'
     size: 'S1'
     family: 'S'
     capacity: 1
   }
-  'S2': {
+  S2: {
     name: 'S2'
     tier: 'Standard'
     size: 'S2'
     family: 'S'
     capacity: 2
   }
-  'S3': {
+  S3: {
     name: 'S3'
     tier: 'Standard'
     size: 'S3'
@@ -97,7 +96,7 @@ var wp_secret_secure_auth_salt = uniqueString(unique_seed_string, 'secure-auth-s
 var wp_secret_logged_in_salt = uniqueString(unique_seed_string, 'logged-in-salt')
 var wp_secret_nonce_salt = uniqueString(unique_seed_string, 'nonce-salt')
 
-// リソース
+// Resources
 /// Virtual Network
 resource virtual_network 'Microsoft.Network/virtualNetworks@2020-11-01' = {
   name: virtual_network_name
@@ -196,7 +195,6 @@ resource private_dns_zone_mysql_flexible_associate 'Microsoft.Network/privateDns
   }
 }
 
-
 /// Azure DB for MySQL
 resource mysql_flexible_server 'Microsoft.DBforMySQL/flexibleServers@2021-05-01' = {
   name: mysql_flexible_server_name
@@ -242,7 +240,7 @@ resource mysql_flexible_server 'Microsoft.DBforMySQL/flexibleServers@2021-05-01'
   ]
 }
 
-/// ストレージ アカウント
+/// Storage Accounts
 resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
   name: storage_account_name
   location: region
@@ -296,7 +294,7 @@ resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
       }
       deleteRetentionPolicy: {
         enabled: true
-        days: 7
+        days: 35
       }
       isVersioningEnabled: true
     }
@@ -311,8 +309,6 @@ resource storage_account 'Microsoft.Storage/storageAccounts@2021-08-01' = {
     }
   }
 }
-
-
 
 /// Key Vaylt
 resource key_vault 'Microsoft.KeyVault/vaults@2021-11-01-preview' = {
@@ -578,7 +574,7 @@ resource app_service_site 'Microsoft.Web/sites@2021-03-01' = {
       isSwift: true
     }
   }
-  
+
   resource app_service_site_hostname 'hostNameBindings' = {
     name: '${site_name}.azurewebsites.net'
   }
