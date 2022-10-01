@@ -508,7 +508,7 @@ resource app_service_site 'Microsoft.Web/sites@2022-03-01' = {
       numberOfWorkers: 1
       linuxFxVersion: 'PHP|8.0'
       acrUseManagedIdentityCreds: false
-      alwaysOn: false
+      alwaysOn: true
       http20Enabled: true
       functionAppScaleLimit: 0
       minimumElasticInstanceCount: 0
